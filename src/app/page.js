@@ -1,95 +1,66 @@
-import Image from 'next/image'
-import styles from './page.module.css'
+"use client";
 
-export default function Home() {
+import { Suspense } from "react";
+
+export default function App() {
   return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>src/app/page.js</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
+    <div className="App">
+      <div style={{ marginLeft: "20px" }}>
+        <h1>My Posts</h1>
+        <Suspense fallback={<h1>Loading...</h1>}>
+          <Posts />
+        </Suspense>
       </div>
+    </div>
+  );
+}
 
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
+function waitSync(seconds) {
+  const milliseconds = seconds * 1000;
+  const startTime = Date.now();
+  let currentTime = startTime;
+  while (currentTime - startTime < milliseconds) {
+    currentTime = Date.now();
+  }
+}
 
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
+function fetchPosts() {
+  console.log("fetching posts...");
+  let result;
+  let status = "pending";
+  let fetching = fetch("https://jsonplaceholder.typicode.com/posts")
+    .then((res) => res.json())
+    .then((success) => {
+      waitSync(2);
+      status = "fulfilled";
+      result = success;
+    })
+    .catch((error) => {
+      status = "rejected";
+      result = error;
+    });
 
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
+  return () => {
+    if (status === "pending") {
+      throw fetching;
+    } else if (status === "rejected") {
+      throw result;
+    } else if (status === "fulfilled") {
+      console.log("posts fetched!");
+      return result;
+    }
+  };
+}
 
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore the Next.js 13 playground.</p>
-        </a>
+const postsData = fetchPosts();
 
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  )
+function Posts() {
+  const posts = postsData();
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
+      {posts.map((post) => (
+        <p key={post.id}>{post.title}</p>
+      ))}
+    </div>
+  );
 }
